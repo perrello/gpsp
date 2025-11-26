@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 #include <streams/file_stream.h>
 #include <libretro.h>
@@ -13,6 +17,13 @@
 
 #include "../gba_memory.h"
 #include "../gba_cc_lut.h"
+
+#ifdef __EMSCRIPTEN__
+extern void netpacket_send_js(int flags, const void *buf, size_t len, uint16_t client_id);
+extern int netpacket_connected_js(uint16_t client_id);
+extern void netpacket_disconnected_js(uint16_t client_id);
+extern void netpacket_poll_js(void);
+#endif
 
 #if defined(VITA) && defined(HAVE_DYNAREC)
 #include <psp2/kernel/sysmem.h>
@@ -440,6 +451,10 @@ void netpacket_send(uint16_t client_id, const void *buf, size_t len) {
   // Force all packets to be flushed ASAP, to minimize latency.
   if (netpacket_send_fn_ptr)
     netpacket_send_fn_ptr(RETRO_NETPACKET_RELIABLE | RETRO_NETPACKET_FLUSH_HINT, buf, len, client_id);
+#ifdef __EMSCRIPTEN__
+  else
+    netpacket_send_js(RETRO_NETPACKET_RELIABLE | RETRO_NETPACKET_FLUSH_HINT, buf, len, client_id);
+#endif
 }
 
 static void netpacket_start(uint16_t client_id, retro_netpacket_send_t send_fn, retro_netpacket_poll_receive_t poll_receive_fn) {
@@ -455,7 +470,14 @@ static void netpacket_stop() {
   netpacket_pollrcv_fn_ptr = NULL;
 }
 
-static void netpacket_receive(const void* buf, size_t len, uint16_t client_id) {
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+void netpacket_receive(const void* buf, size_t len, uint16_t client_id) {
+#ifdef __EMSCRIPTEN__
+  // If the frontend does not provide the netpacket interface, JS may call back directly.
+  // Nothing to do here; the JS bridge should call into the appropriate receive handlers.
+#endif
   switch (serial_mode) {
   case SERIAL_MODE_RFU:
     rfu_net_receive(buf, len, client_id);
@@ -469,6 +491,14 @@ static void netpacket_receive(const void* buf, size_t len, uint16_t client_id) {
     break;
   };
 }
+
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+void netpacket_set_client_state(uint16_t client_id, uint16_t num_clients) {
+  netplay_client_id = client_id;
+  netplay_num_clients = num_clients;
+}
+#endif
 
 // Ensure we do not have too many clients for the type of connection used.
 static bool netpacket_connected(uint16_t client_id) {
@@ -487,18 +517,25 @@ static bool netpacket_connected(uint16_t client_id) {
     return false;
 
   netplay_num_clients++;
+#ifdef __EMSCRIPTEN__
+  return netpacket_connected_js(client_id);
+#else
   return true;
+#endif
 }
 
 static void netpacket_disconnected(uint16_t client_id) {
   netplay_num_clients--;
+#ifdef __EMSCRIPTEN__
+  netpacket_disconnected_js(client_id);
+#endif
 }
 
 const struct retro_netpacket_callback netpacket_iface = {
   netpacket_start,          /* start */
   netpacket_receive,        /* receive */
   netpacket_stop,           /* stop */
-  NULL,                     /* poll */
+  netpacket_poll_js,        /* poll */
   netpacket_connected,      /* connected */
   netpacket_disconnected,   /* disconnected */
   GPSP_NETPACKET_VERSION,   /* core version char* */

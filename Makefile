@@ -625,8 +625,8 @@ endif
 cpu_threaded.o: cpu_threaded.c
 	$(CC) $(INCFLAGS) $(CFLAGS) $(OPTIMIZE) -Wno-unused-variable -Wno-unused-label -c  -o $@ $<
 
-%.o: %.S
-	$(CC) $(ASFLAGS) $(CFLAGS) $(OPTIMIZE) -c -o $@ $<
+%.o: %.s
+	emcc -c $< -o $@
 
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) $(OPTIMIZE) -c  -o $@ $<
