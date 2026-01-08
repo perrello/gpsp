@@ -72,6 +72,12 @@
 
 #include "platform_emscripten.h"
 
+/* gpsp-specific RTC override hooks (linked from the core).
+ * These are no-ops for other cores, but in this repository
+ * the Emscripten build always links against gpsp. */
+extern void gpsp_set_rtc_time_from_unix(unsigned int unix_time);
+extern void gpsp_clear_rtc_override(void);
+
 void emscripten_mainloop(void);
 
 /* javascript library functions */
@@ -86,6 +92,7 @@ void PlatformEmscriptenSetCanvasSize(int width, int height);
 void PlatformEmscriptenSetWakeLock(bool state);
 uint32_t PlatformEmscriptenGetSystemInfo(void);
 void PlatformEmscriptenFree(void);
+void PlatformEmscriptenOnSaveFilesComplete(void);
 
 typedef struct
 {
@@ -266,6 +273,24 @@ void cmd_cheat_apply_cheats(void)
 {
    cheat_manager_apply_cheats(
          config_get_ptr()->bools.notification_show_cheats_applied);
+}
+
+/* gpsp RTC override
+ * Exposed to JS as _cmd_set_rtc_time / _cmd_clear_rtc_time. */
+
+void cmd_set_rtc_time(unsigned int unix_time)
+{
+   gpsp_set_rtc_time_from_unix(unix_time);
+}
+
+void cmd_clear_rtc_time(void)
+{
+   gpsp_clear_rtc_override();
+}
+
+void platform_emscripten_on_save_files_complete(void)
+{
+   PlatformEmscriptenOnSaveFilesComplete();
 }
 
 /* javascript callbacks */

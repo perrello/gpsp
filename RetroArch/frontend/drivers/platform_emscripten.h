@@ -198,4 +198,10 @@ enum platform_emscripten_browser platform_emscripten_get_browser(void);
  */
 enum platform_emscripten_os platform_emscripten_get_os(void);
 
+/**
+ * Notify the frontend that save files have been flushed.
+ * Only used in the Emscripten build to signal JS.
+ */
+void platform_emscripten_on_save_files_complete(void);
+
 #endif

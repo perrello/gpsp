@@ -231,6 +231,11 @@ void write_rumble(bool oldv, bool newv);
 void rumble_frame_reset();
 float rumble_active_pct();
 
+/* Optional RTC override (used by JS integration).
+ * When no override is set, the core uses host time. */
+void gpsp_set_rtc_time_from_unix(u32 unix_time);
+void gpsp_clear_rtc_override(void);
+
 /* EDIT: Shouldn't this be extern ?! */
 extern const u32 def_seq_cycles[16][2];
 /* Cycles can change depending on WAITCNT */

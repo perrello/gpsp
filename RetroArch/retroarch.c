@@ -3020,7 +3020,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          return event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED);
       case CMD_EVENT_SAVE_FILES:
-         return event_save_files(
+         {
+            bool result = event_save_files(
                runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
 #if defined(HAVE_ZLIB)
                settings->bools.save_file_compression,
@@ -3032,7 +3033,13 @@ bool command_event(enum event_command cmd, void *data)
 #else
                NULL
 #endif
-         );
+            );
+#if defined(HAVE_EMSCRIPTEN)
+            if (result)
+               platform_emscripten_on_save_files_complete();
+#endif
+            return result;
+         }
       case CMD_EVENT_OVERLAY_UNLOAD:
 #ifdef HAVE_OVERLAY
          input_overlay_unload();

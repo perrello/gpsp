@@ -186,6 +186,17 @@ var LibraryPlatformEmscripten = {
       return browser | (os << 16);
    },
 
+   PlatformEmscriptenOnSaveFilesComplete__proxy: "sync",
+   PlatformEmscriptenOnSaveFilesComplete: function() {
+      try {
+         if (typeof Module !== "undefined" && Module && typeof Module.onSaveFilesComplete === "function") {
+            Module.onSaveFilesComplete();
+         }
+      } catch (e) {
+         // Swallow exceptions to avoid breaking the main loop.
+      }
+   },
+
    $EmscriptenSendCommand__deps: ["platform_emscripten_command_raise_flag"],
    $EmscriptenSendCommand: function(str) {
       RPE.command_queue.push(str);

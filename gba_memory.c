@@ -1208,6 +1208,22 @@ u32 rtc_data_bits;
 u32 rtc_status = 0x40;
 s32 rtc_bit_count;
 
+/* Optional RTC override (used when set from JS via libretro/emscripten).
+ * When inactive, the host system time is used. */
+static bool rtc_override_active = false;
+static time_t rtc_override_time;
+
+void gpsp_set_rtc_time_from_unix(u32 unix_time)
+{
+  rtc_override_active = true;
+  rtc_override_time   = (time_t)unix_time;
+}
+
+void gpsp_clear_rtc_override(void)
+{
+  rtc_override_active = false;
+}
+
 // Rumble trackin vars, not really preserved (it's just aproximate)
 static u32 rumble_enable_tick, rumble_ticks;
 
@@ -1289,6 +1305,8 @@ static void write_rtc(u8 old, u8 new)
             struct tm *current_time;
             time_t current_time_flat;
             time(&current_time_flat);
+            if (rtc_override_active)
+              current_time_flat = rtc_override_time;
             current_time = localtime(&current_time_flat);
 
             rtc_state = RTC_OUTPUT_DATA;
@@ -1307,6 +1325,8 @@ static void write_rtc(u8 old, u8 new)
             struct tm *current_time;
             time_t current_time_flat;
             time(&current_time_flat);
+            if (rtc_override_active)
+              current_time_flat = rtc_override_time;
             current_time = localtime(&current_time_flat);
 
             rtc_state = RTC_OUTPUT_DATA;
@@ -2571,5 +2591,4 @@ s32 load_bios(char *name)
   filestream_close(fd);
   return 0;
 }
-
 
