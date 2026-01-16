@@ -1,9 +1,10 @@
   #!/bin/bash
   set -e
 
-  CORE_NAME="gpsp"
-  BUILD_DIR="build-emscripten"
-  OUTPUT_DIR="dist-wasm"
+CORE_NAME="gpsp"
+BUILD_DIR="build-emscripten"
+OUTPUT_DIR="dist-wasm"
+HAVE_AL=0
 
   RETROARCH_DIR="./Retroarch" 
   CORE_BC="${CORE_NAME}_libretro_emscripten.bc"
@@ -35,8 +36,8 @@
   echo "======== 5. Build RetroArch WASM linker ========"
   cd "$RETROARCH_DIR"
 
-  emmake make -f Makefile.emscripten LIBRETRO=${CORE_NAME} clean
-  emmake make -f Makefile.emscripten LIBRETRO=${CORE_NAME} -j all VERBOSE=1
+emmake make -f Makefile.emscripten LIBRETRO=${CORE_NAME} HAVE_AL=${HAVE_AL} clean
+emmake make -f Makefile.emscripten LIBRETRO=${CORE_NAME} HAVE_AL=${HAVE_AL} -j all VERBOSE=1
 
   echo "======== 7. Export output ========"
   cp ${CORE_NAME}_libretro.js   "../$OUTPUT_DIR/${CORE_NAME}.js"
